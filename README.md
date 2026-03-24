@@ -33,6 +33,14 @@ Levantar PostgreSQL:
 docker compose up -d db
 ```
 
+Preparar entorno local:
+
+```bash
+python -m venv .venv
+source .venv/Scripts/activate
+python -m pip install -r requirements.txt
+```
+
 Correr migraciones:
 
 Local:
@@ -52,7 +60,7 @@ Levantar la API:
 Local:
 
 ```bash
-uvicorn app.main:app --reload
+fastapi dev
 ```
 
 Con Docker:
