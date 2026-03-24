@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.notifications.models.models import Notification
-from app.modules.shared.enums import NotificationStatus
+from app.modules.shared.enums import NotificationChannel, NotificationStatus
 from app.modules.weather.models.models import WeatherForecast
 from app.modules.alerts.models.models import Alert
 
@@ -37,6 +37,8 @@ class NotificationRepository:
             alert_id=alert.id,
             forecast_id=forecast.id,
             status=NotificationStatus.PENDING,
+            channel=NotificationChannel.WHATSAPP,
+            recipient=alert.field.user.phone_number,
             message=(
                 f"Field {alert.field_id} has a {forecast.event_type} forecast for "
                 f"{forecast.forecast_date} with probability {forecast.probability}%."

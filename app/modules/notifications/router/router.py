@@ -9,9 +9,9 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 service = NotificationService()
 
 
-@router.get("/", response_model=list[NotificationRead])
+@router.get("", response_model=list[NotificationRead])
 async def list_notifications(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[NotificationRead]:
-    return await service.list_notifications(session)
-
+    notifications = await service.list_notifications(session)
+    return [NotificationRead.model_validate(notification) for notification in notifications]

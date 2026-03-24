@@ -50,6 +50,8 @@ async def seeded_db_session(session_factory) -> AsyncGenerator[AsyncSession, Non
 
 @pytest_asyncio.fixture
 async def api_client(session_factory) -> AsyncGenerator[AsyncClient, None]:
+    app.state.disable_scheduler = True
+
     async def override_get_db_session() -> AsyncGenerator[AsyncSession, None]:
         async with session_factory() as session:
             yield session
@@ -63,4 +65,4 @@ async def api_client(session_factory) -> AsyncGenerator[AsyncClient, None]:
         yield client
 
     app.dependency_overrides.clear()
-
+    app.state.disable_scheduler = False

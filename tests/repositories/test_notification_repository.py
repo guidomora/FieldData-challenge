@@ -1,8 +1,11 @@
 from datetime import date
 
 import pytest
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.modules.alerts.models.models import Alert
+from app.modules.fields.models.models import Field
 from app.modules.notifications.repository.repository import NotificationRepository
 from app.modules.shared.enums import NotificationStatus
 from app.modules.shared.enums import WeatherEventType
@@ -14,9 +17,20 @@ async def test_given_alert_and_forecast_when_creating_notification_then_reposito
     seeded_db_session,
 ):
     repository = NotificationRepository()
-    alert = Alert(field_id=1, event_type=WeatherEventType.RAIN, threshold=70, is_active=True)
+    result = await seeded_db_session.execute(
+        select(Field).options(selectinload(Field.user)).where(Field.id == 1)
+    )
+    field = result.scalar_one()
+
+    alert = Alert(
+        field_id=field.id,
+        field=field,
+        event_type=WeatherEventType.RAIN,
+        threshold=70,
+        is_active=True,
+    )
     forecast = WeatherForecast(
-        field_id=1,
+        field_id=field.id,
         event_type=WeatherEventType.RAIN,
         forecast_date=date.today(),
         probability=80,
@@ -35,4 +49,6 @@ async def test_given_alert_and_forecast_when_creating_notification_then_reposito
     assert created_notification.alert_id == alert.id
     assert created_notification.forecast_id == forecast.id
     assert created_notification.status == NotificationStatus.PENDING
+    assert created_notification.channel == "whatsapp"
+    assert created_notification.recipient == "+5491111111111"
     assert "probability 80" in created_notification.message

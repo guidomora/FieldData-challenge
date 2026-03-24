@@ -16,20 +16,22 @@ service = AlertService()
 evaluator_use_case = AlertEvaluatorUseCase()
 
 
-@router.get("/", response_model=list[AlertRead])
+@router.get("", response_model=list[AlertRead])
 async def list_alerts(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[AlertRead]:
-    return await service.list_alerts(session)
+    alerts = await service.list_alerts(session)
+    return [AlertRead.model_validate(alert) for alert in alerts]
 
 
-@router.post("/", response_model=AlertRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AlertRead, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     payload: AlertCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> AlertRead:
     try:
-        return await service.create_alert(session, payload)
+        alert = await service.create_alert(session, payload)
+        return AlertRead.model_validate(alert)
     except AlertValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -73,4 +75,4 @@ async def update_alert(
             },
         )
 
-    return alert
+    return AlertRead.model_validate(alert)

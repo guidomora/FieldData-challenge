@@ -4,7 +4,7 @@ from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Index, Numer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.modules.shared.enums import WeatherEventType
+from app.modules.shared.enums import ForecastSource, WeatherEventType
 
 
 class WeatherForecast(Base):
@@ -25,7 +25,11 @@ class WeatherForecast(Base):
     event_type: Mapped[WeatherEventType] = mapped_column(String(30), nullable=False)
     forecast_date: Mapped[date] = mapped_column(Date, nullable=False)
     probability: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
-    source: Mapped[str] = mapped_column(String(100), nullable=False, default="mock_ingestion")
+    source: Mapped[ForecastSource] = mapped_column(
+        String(100),
+        nullable=False,
+        default=ForecastSource.MOCK_INGESTION,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -34,4 +38,3 @@ class WeatherForecast(Base):
 
     field = relationship("Field", back_populates="forecasts")
     notifications = relationship("Notification", back_populates="forecast")
-

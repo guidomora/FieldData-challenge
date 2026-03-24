@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.shared.enums import WeatherEventType
+from app.modules.shared.enums import ForecastSource, WeatherEventType
 
 
 class WeatherForecastCreate(BaseModel):
@@ -10,7 +10,7 @@ class WeatherForecastCreate(BaseModel):
     event_type: WeatherEventType
     forecast_date: date
     probability: float = Field(ge=0, le=100)
-    source: str = Field(default="mock_ingestion", min_length=1, max_length=100)
+    source: ForecastSource = ForecastSource.MOCK_INGESTION
 
 
 class WeatherForecastRead(BaseModel):
@@ -19,8 +19,7 @@ class WeatherForecastRead(BaseModel):
     event_type: WeatherEventType
     forecast_date: date
     probability: float
-    source: str
+    source: ForecastSource
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

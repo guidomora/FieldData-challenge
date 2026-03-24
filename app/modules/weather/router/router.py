@@ -9,9 +9,9 @@ router = APIRouter(prefix="/weather-forecasts", tags=["weather-forecasts"])
 service = WeatherForecastService()
 
 
-@router.get("/", response_model=list[WeatherForecastRead])
+@router.get("", response_model=list[WeatherForecastRead])
 async def list_weather_forecasts(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[WeatherForecastRead]:
-    return await service.list_forecasts(session)
-
+    forecasts = await service.list_forecasts(session)
+    return [WeatherForecastRead.model_validate(forecast) for forecast in forecasts]

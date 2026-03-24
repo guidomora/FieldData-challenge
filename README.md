@@ -1,55 +1,97 @@
 # FieldData Weather Alerts
 
-API para gestionar alertas climáticas sobre campos agrícolas usando datos meteorológicos ya persistidos en base.
+Backend para el challenge de alertas climaticas usando FastAPI, SQLAlchemy async, PostgreSQL y Alembic.
 
-## Qué hace hoy
+El sistema permite consultar forecasts mockeados, crear alertas por campo y tipo de evento, evaluarlas contra datos climaticos futuros y generar notificaciones sin duplicados. No hay integracion real con WhatsApp: la tabla `notifications` representa la salida lista para un envio futuro, incluyendo `channel`, `recipient`, `status` y `message`.
 
-El proyecto ya tiene:
+## Como levantar el proyecto
 
-- modelo de datos base con migraciones
-- datos demo para `users`, `fields` y `weather_forecasts`
-- endpoints para consultar forecasts, alertas y notificaciones
-- creación y actualización de alertas
-- evaluación manual de alertas para generar notificaciones
+1. Duplicar `.env.template`.
+2. Dejar una de esas copias con el nombre `.env`.
+3. Completar o ajustar las variables de entorno en ese archivo `.env`.
 
-## Flujo rápido
+Variables principales:
 
-El flujo principal de uso es este:
+- `PROJECT_NAME`
+- `API_PREFIX`
+- `APP_HOST`
+- `APP_PORT`
+- `LOG_LEVEL`
+- `POSTGRES_SERVER`
+- `POSTGRES_PORT`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `DATABASE_URL`
+- `ALERT_EVALUATION_INTERVAL_SECONDS`
 
-1. Consultar los forecasts disponibles.
-2. Crear una alerta para un `field_id` existente.
-3. Ejecutar la evaluación de alertas.
-4. Consultar las notificaciones generadas.
+Levantar PostgreSQL:
+
+```bash
+docker compose up -d db
+```
+
+Correr migraciones:
+
+Local:
+
+```bash
+alembic upgrade head
+```
+
+Con Docker:
+
+```bash
+docker compose run --rm api alembic upgrade head
+```
+
+Levantar la API:
+
+Local:
+
+```bash
+uvicorn main:app --reload
+```
+
+Con Docker:
+
+```bash
+docker compose up -d api
+```
+
+Swagger UI para ver la documentacion de los endpoints y probarlos desde ahi:
+
+```text
+http://127.0.0.1:8000/docs
+```
 
 ## Endpoints principales
 
-### `GET /`
+Todos los endpoints quedan bajo el prefijo `/agrobot`.
 
-Healthcheck simple de la aplicación.
+### `GET /agrobot/weather-forecasts`
 
-### `GET /api/v1/health`
+Lista los forecasts disponibles en base.
 
-Healthcheck dentro del prefijo de API.
+Respuesta:
 
-### `GET /api/v1/weather-forecasts/`
+- lista de forecasts
+- cada forecast incluye `field_id`, `event_type`, `forecast_date`, `probability`, `source`
 
-Lista los datos meteorológicos mockeados que ya existen en base.
+### `GET /agrobot/alerts`
 
-Se usa para entender:
+Lista las alertas creadas.
 
-- qué `field_id` existen
-- qué `event_type` existen
-- qué probabilidades podrían disparar alertas
+Respuesta:
 
-### `GET /api/v1/alerts/`
+- lista de alertas
+- cada alerta incluye `field_id`, `event_type`, `threshold`, `is_active`
 
-Lista todas las alertas creadas.
-
-### `POST /api/v1/alerts/`
+### `POST /agrobot/alerts`
 
 Crea una nueva alerta.
 
-Body esperado:
+Body:
 
 ```json
 {
@@ -59,22 +101,21 @@ Body esperado:
 }
 ```
 
-Reglas principales:
+Reglas:
 
 - `field_id` debe existir
-- `event_type` debe ser uno de los valores válidos
+- `event_type` debe ser uno de los valores validos
 - `threshold` debe estar entre `0` y `100`
 
-### `PATCH /api/v1/alerts/{alert_id}`
+### `PATCH /agrobot/alerts/{alert_id}`
 
 Actualiza una alerta existente.
 
-Permite modificar:
+Params:
 
-- `threshold`
-- `is_active`
+- `alert_id`: id de la alerta
 
-Ejemplo:
+Body:
 
 ```json
 {
@@ -83,16 +124,20 @@ Ejemplo:
 }
 ```
 
-### `POST /api/v1/alerts/evaluate`
+Se puede enviar uno o ambos campos:
 
-Ejecuta manualmente la evaluación de alertas activas contra los forecasts futuros.
+- `threshold`
+- `is_active`
 
-Si una alerta supera el umbral:
+### `POST /agrobot/alerts/evaluate`
 
-- se genera una notificación
-- no se duplica si ya existe una para la misma combinación `alert + forecast`
+Ejecuta manualmente la evaluacion de alertas activas contra los forecasts futuros.
 
-Respuesta esperada:
+Body:
+
+- no requiere body
+
+Respuesta:
 
 ```json
 {
@@ -101,35 +146,28 @@ Respuesta esperada:
 }
 ```
 
-### `GET /api/v1/notifications/`
+### `GET /agrobot/notifications`
 
-Lista las notificaciones generadas por la evaluación.
+Lista las notificaciones generadas.
 
-## Orden recomendado para probarlo
+Respuesta:
 
-1. `GET /api/v1/weather-forecasts/`
-2. `POST /api/v1/alerts/`
-3. `GET /api/v1/alerts/`
-4. `POST /api/v1/alerts/evaluate`
-5. `GET /api/v1/notifications/`
+- lista de notificaciones
+- cada una incluye `channel`, `recipient`, `status`, `message`
 
-## Ejemplo que debería disparar una notificación
+## Flujo recomendado para probarlo
 
-Con los datos demo actuales, esta alerta debería matchear:
+1. Consultar `GET /agrobot/weather-forecasts` para ver que datos existen.
+2. Crear una alerta con `POST /agrobot/alerts`.
+3. Verificarla con `GET /agrobot/alerts`.
+4. Ejecutar `POST /agrobot/alerts/evaluate`.
+5. Consultar `GET /agrobot/notifications`.
 
-```json
-{
-  "field_id": 1,
-  "event_type": "rain",
-  "threshold": 70
-}
-```
+Con los datos demo actuales, una alerta para `field_id=1`, `event_type=rain`, `threshold=70` deberia generar una notificacion.
 
-Porque en los datos seed existe un forecast para `field_id=1`, evento `rain`, con probabilidad `72`.
+## Errores esperables
 
-## Validaciones y errores esperables
-
-La API ahora devuelve errores con un formato uniforme:
+La API devuelve errores con formato uniforme:
 
 ```json
 {
@@ -148,16 +186,25 @@ La API ahora devuelve errores con un formato uniforme:
 
 Comportamiento actual:
 
-- `400` para errores de negocio, por ejemplo si el `field_id` no existe
-- `404` si se intenta actualizar una alerta inexistente
-- `422` si el body tiene tipos inválidos o faltan campos requeridos
-- `500` con un mensaje genérico si ocurre un problema interno no controlado
+- `400` para errores de negocio, por ejemplo `field_id` inexistente
+- `404` para recursos inexistentes
+- `422` para body invalido o tipos incorrectos
+- `500` para errores internos no controlados
 
-Ejemplos:
+## Tests
 
-- `field_id` inexistente al crear alerta: `400`
-- `threshold` fuera de rango: `422`
-- mandar texto donde se espera número: `422`
+La suite usa SQLite async en memoria para no depender de PostgreSQL.
 
-Un `500` no debería representar un error de input del usuario; si aparece, la respuesta no expone detalles internos, pero indica que hubo un fallo del servidor.
-# FieldData-challenge
+```bash
+python -m pytest
+```
+
+## Logging
+
+El proyecto usa `logging` de Python con logs en:
+
+- arranque y parada del scheduler
+- iteraciones del background job
+- creacion y actualizacion de alertas
+- evaluacion de alertas y creacion de notificaciones
+- warnings para validaciones de negocio rechazadas

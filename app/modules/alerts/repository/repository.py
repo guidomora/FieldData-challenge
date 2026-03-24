@@ -1,18 +1,27 @@
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.alerts.models.models import Alert
+from app.modules.fields.models.models import Field
 from app.modules.alerts.schemas.schemas import AlertCreate, AlertUpdate
 
 
 class AlertRepository:
     async def list_all(self, session: AsyncSession) -> list[Alert]:
-        result = await session.execute(select(Alert).order_by(Alert.id))
+        result = await session.execute(
+            select(Alert)
+            .options(selectinload(Alert.field).selectinload(Field.user))
+            .order_by(Alert.id)
+        )
         return list(result.scalars().all())
 
     async def list_active(self, session: AsyncSession) -> list[Alert]:
         result = await session.execute(
-            select(Alert).where(Alert.is_active.is_(True)).order_by(Alert.id)
+            select(Alert)
+            .options(selectinload(Alert.field).selectinload(Field.user))
+            .where(Alert.is_active.is_(True))
+            .order_by(Alert.id)
         )
         return list(result.scalars().all())
 
@@ -24,7 +33,11 @@ class AlertRepository:
         return alert
 
     async def get_by_id(self, session: AsyncSession, alert_id: int) -> Alert | None:
-        result = await session.execute(select(Alert).where(Alert.id == alert_id))
+        result = await session.execute(
+            select(Alert)
+            .options(selectinload(Alert.field).selectinload(Field.user))
+            .where(Alert.id == alert_id)
+        )
         return result.scalar_one_or_none()
 
     async def update(

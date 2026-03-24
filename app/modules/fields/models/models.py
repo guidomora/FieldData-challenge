@@ -4,6 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.modules.users.models.models import User
 
 
 class Field(Base):
@@ -19,7 +20,6 @@ class Field(Base):
         nullable=False,
     )
 
-    user = relationship("User", back_populates="fields")
+    user = relationship(User, back_populates="fields")
     alerts = relationship("Alert", back_populates="field")
     forecasts = relationship("WeatherForecast", back_populates="field")
-

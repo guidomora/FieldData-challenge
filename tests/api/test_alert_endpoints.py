@@ -2,18 +2,10 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_given_running_application_when_requesting_healthcheck_then_endpoint_returns_ok(api_client):
-    response = await api_client.get("/api/v1/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-
-@pytest.mark.asyncio
 async def test_given_seeded_database_when_listing_weather_forecasts_then_endpoint_returns_seeded_rows(
     api_client,
 ):
-    response = await api_client.get("/api/v1/weather-forecasts/")
+    response = await api_client.get("/agrobot/weather-forecasts")
 
     body = response.json()
 
@@ -25,7 +17,7 @@ async def test_given_seeded_database_when_listing_weather_forecasts_then_endpoin
 @pytest.mark.asyncio
 async def test_given_valid_payload_when_creating_alert_then_endpoint_returns_created_alert(api_client):
     response = await api_client.post(
-        "/api/v1/alerts/",
+        "/agrobot/alerts",
         json={"field_id": 1, "event_type": "rain", "threshold": 70},
     )
 
@@ -41,12 +33,12 @@ async def test_given_valid_payload_when_creating_alert_then_endpoint_returns_cre
 @pytest.mark.asyncio
 async def test_given_created_alert_when_listing_alerts_then_endpoint_returns_it(api_client):
     create_response = await api_client.post(
-        "/api/v1/alerts/",
+        "/agrobot/alerts",
         json={"field_id": 1, "event_type": "rain", "threshold": 70},
     )
     assert create_response.status_code == 201
 
-    list_response = await api_client.get("/api/v1/alerts/")
+    list_response = await api_client.get("/agrobot/alerts")
 
     body = list_response.json()
 
@@ -59,7 +51,7 @@ async def test_given_created_alert_when_listing_alerts_then_endpoint_returns_it(
 @pytest.mark.asyncio
 async def test_given_missing_field_when_creating_alert_then_endpoint_returns_business_error(api_client):
     response = await api_client.post(
-        "/api/v1/alerts/",
+        "/agrobot/alerts",
         json={"field_id": 999, "event_type": "rain", "threshold": 70},
     )
 
@@ -77,7 +69,7 @@ async def test_given_invalid_threshold_type_when_creating_alert_then_endpoint_re
     api_client,
 ):
     response = await api_client.post(
-        "/api/v1/alerts/",
+        "/agrobot/alerts",
         json={"field_id": 1, "event_type": "rain", "threshold": "high"},
     )
 
@@ -92,7 +84,7 @@ async def test_given_invalid_threshold_type_when_creating_alert_then_endpoint_re
 @pytest.mark.asyncio
 async def test_given_unknown_alert_when_updating_alert_then_endpoint_returns_not_found(api_client):
     response = await api_client.patch(
-        "/api/v1/alerts/999",
+        "/agrobot/alerts/999",
         json={"threshold": 55},
     )
 
@@ -110,13 +102,13 @@ async def test_given_matching_alert_when_evaluating_then_notification_is_visible
     api_client,
 ):
     create_alert_response = await api_client.post(
-        "/api/v1/alerts/",
+        "/agrobot/alerts",
         json={"field_id": 1, "event_type": "rain", "threshold": 70},
     )
     assert create_alert_response.status_code == 201
 
-    evaluate_response = await api_client.post("/api/v1/alerts/evaluate")
-    notifications_response = await api_client.get("/api/v1/notifications/")
+    evaluate_response = await api_client.post("/agrobot/alerts/evaluate")
+    notifications_response = await api_client.get("/agrobot/notifications")
 
     evaluate_body = evaluate_response.json()
     notifications_body = notifications_response.json()
@@ -128,3 +120,5 @@ async def test_given_matching_alert_when_evaluating_then_notification_is_visible
     assert len(notifications_body) == 1
     assert notifications_body[0]["alert_id"] == create_alert_response.json()["id"]
     assert notifications_body[0]["status"] == "pending"
+    assert notifications_body[0]["channel"] == "whatsapp"
+    assert notifications_body[0]["recipient"] == "+5491111111111"

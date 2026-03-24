@@ -5,9 +5,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     project_name: str = "FieldData Weather Alerts"
-    api_v1_prefix: str = "/api/v1"
+    api_prefix: str = "/agrobot"
     app_host: str = "0.0.0.0"
     app_port: int = 8000
+    log_level: str = "INFO"
     postgres_server: str = "localhost"
     postgres_port: int = 5432
     postgres_user: str = "fielddata"
@@ -28,4 +29,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

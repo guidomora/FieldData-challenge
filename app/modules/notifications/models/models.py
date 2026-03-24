@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.modules.shared.enums import NotificationStatus
+from app.modules.shared.enums import NotificationChannel, NotificationStatus
 
 
 class Notification(Base):
@@ -30,6 +30,12 @@ class Notification(Base):
         nullable=False,
         default=NotificationStatus.PENDING,
     )
+    channel: Mapped[NotificationChannel] = mapped_column(
+        String(30),
+        nullable=False,
+        default=NotificationChannel.WHATSAPP,
+    )
+    recipient: Mapped[str] = mapped_column(String(30), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -39,4 +45,3 @@ class Notification(Base):
 
     alert = relationship("Alert", back_populates="notifications")
     forecast = relationship("WeatherForecast", back_populates="notifications")
-
