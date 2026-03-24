@@ -2,7 +2,9 @@
 
 Backend para el challenge de alertas climaticas usando FastAPI, SQLAlchemy async, PostgreSQL y Alembic.
 
-El sistema permite consultar forecasts mockeados, crear alertas por campo y tipo de evento, evaluarlas contra datos climaticos futuros y generar notificaciones sin duplicados. No hay integracion real con WhatsApp: la tabla `notifications` representa la salida lista para un envio futuro, incluyendo `channel`, `recipient`, `status` y `message`.
+La aplicacion trabaja sobre forecasts climaticos futuros ya almacenados en base de datos. Un usuario crea una alerta asociada a un campo, un tipo de evento climatico y un `threshold`. El `threshold` representa el valor minimo de probabilidad a partir del cual el usuario quiere ser avisado. Por ejemplo, si una alerta para lluvia tiene `threshold=70`, la notificacion solo se genera cuando exista un weather forecast de lluvia para ese campo con probabilidad mayor o igual a `70`.
+
+La evaluacion de alertas puede ejecutarse manualmente por endpoint o automaticamente mediante un background job. Cuando la probabilidad del forecast supera el `threshold` configurado, el sistema crea una notificacion. La aplicacion evita duplicados para la misma combinacion de alerta y forecast. No hay integracion real con WhatsApp: la tabla `notifications` representa la salida lista para un envio futuro, incluyendo `channel`, `recipient`, `status` y `message`.
 
 ## Como levantar el proyecto
 
@@ -50,7 +52,7 @@ Levantar la API:
 Local:
 
 ```bash
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Con Docker:
@@ -58,6 +60,7 @@ Con Docker:
 ```bash
 docker compose up -d api
 ```
+En la consola se pueden obreservar logs informativos para ver cuando es que corre el job, cuando se ejecutan ciertos metodos, etc.
 
 Swagger UI para ver la documentacion de los endpoints y probarlos desde ahi:
 
@@ -160,7 +163,7 @@ Respuesta:
 1. Consultar `GET /agrobot/weather-forecasts` para ver que datos existen.
 2. Crear una alerta con `POST /agrobot/alerts`.
 3. Verificarla con `GET /agrobot/alerts`.
-4. Ejecutar `POST /agrobot/alerts/evaluate`.
+4. Ejecutar `POST /agrobot/alerts/evaluate`. O esperar 60 segundos a que corra el job
 5. Consultar `GET /agrobot/notifications`.
 
 Con los datos demo actuales, una alerta para `field_id=1`, `event_type=rain`, `threshold=70` deberia generar una notificacion.
