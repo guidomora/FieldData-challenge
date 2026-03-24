@@ -68,6 +68,10 @@ Swagger UI para ver la documentacion de los endpoints y probarlos desde ahi:
 http://127.0.0.1:8000/docs
 ```
 
+## Charts
+
+En mermaid_chart.md se encuentran los diagramas de la app y de la db.
+
 ## Endpoints principales
 
 Todos los endpoints quedan bajo el prefijo `/agrobot`.
